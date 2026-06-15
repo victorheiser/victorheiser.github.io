@@ -494,6 +494,7 @@
 <script>
 const KEY = 'study_pwa_v1';
 let timerSec = 0, timerInterval = null, chartInst = null;
+let timerStartTime = null, timerAccumulated = 0, timerRunning = false;
 let deferredInstallPrompt = null;
 
 const SUBJECT_COLORS = {
@@ -713,19 +714,24 @@ function renderCfgSubjects() {
 }
 
 function startTimer() {
-  timerSec=0;
+  timerSec=0; timerAccumulated=0;
+  timerStartTime=Date.now();
+  timerRunning=true;
   document.getElementById('btn-start').style.display='none';
   document.getElementById('btn-pause').style.display='inline-flex';
   document.getElementById('btn-stop').style.display='inline-flex';
   document.getElementById('t-display').className='timer-display running';
   document.getElementById('t-status').textContent='Sessão em andamento...';
   timerInterval=setInterval(()=>{
-    timerSec++;
+    timerSec=Math.floor((Date.now()-timerStartTime)/1000)+timerAccumulated;
     document.getElementById('t-display').textContent=fmtTimer(timerSec);
-  },1000);
+  },500);
 }
 
 function pauseTimer() {
+  timerAccumulated+=Math.floor((Date.now()-timerStartTime)/1000);
+  timerStartTime=null;
+  timerRunning=false;
   clearInterval(timerInterval);
   document.getElementById('btn-pause').style.display='none';
   document.getElementById('btn-resume').style.display='inline-flex';
@@ -734,17 +740,23 @@ function pauseTimer() {
 }
 
 function resumeTimer() {
+  timerStartTime=Date.now();
+  timerRunning=true;
   document.getElementById('btn-pause').style.display='inline-flex';
   document.getElementById('btn-resume').style.display='none';
   document.getElementById('t-display').className='timer-display running';
   document.getElementById('t-status').textContent='Sessão em andamento...';
   timerInterval=setInterval(()=>{
-    timerSec++;
+    timerSec=Math.floor((Date.now()-timerStartTime)/1000)+timerAccumulated;
     document.getElementById('t-display').textContent=fmtTimer(timerSec);
-  },1000);
+  },500);
 }
 
 function stopTimer() {
+  if(timerRunning && timerStartTime) {
+    timerAccumulated+=Math.floor((Date.now()-timerStartTime)/1000);
+  }
+  timerSec=timerAccumulated;
   clearInterval(timerInterval);
   const mins=Math.round(timerSec/60);
   if (mins<1){toast('Sessão muito curta — mínimo 1 minuto.');resetTimerUI();return;}
@@ -765,7 +777,7 @@ function stopTimer() {
 }
 
 function resetTimerUI() {
-  timerSec=0;
+  timerSec=0; timerAccumulated=0; timerStartTime=null; timerRunning=false;
   clearInterval(timerInterval);
   document.getElementById('t-display').textContent='00:00:00';
   document.getElementById('t-display').className='timer-display';
@@ -885,6 +897,14 @@ window.addEventListener('appinstalled',()=>{
 if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('sw.js').catch(()=>{});
 }
+
+// Page Visibility API — resync timer when tab/window becomes visible again
+document.addEventListener('visibilitychange', () => {
+  if (!document.hidden && timerRunning && timerStartTime) {
+    timerSec=Math.floor((Date.now()-timerStartTime)/1000)+timerAccumulated;
+    document.getElementById('t-display').textContent=fmtTimer(timerSec);
+  }
+});
 
 document.getElementById('m-date').value=todayStr();
 const _d=load();
