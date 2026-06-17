@@ -523,13 +523,22 @@ function defaultData() {
 
 function save(d) { localStorage.setItem(KEY, JSON.stringify(d)); }
 
-function todayStr() { return new Date().toISOString().slice(0,10); }
+function todayStr() {
+  const d = new Date();
+  const y = d.getFullYear();
+  const m = String(d.getMonth()+1).padStart(2,'0');
+  const dd = String(d.getDate()).padStart(2,'0');
+  return `${y}-${m}-${dd}`;
+}
 
 function weekStart() {
   const d = new Date();
   const day = d.getDay(), diff = day===0?6:day-1;
   d.setDate(d.getDate()-diff);
-  return d.toISOString().slice(0,10);
+  const y = d.getFullYear();
+  const m = String(d.getMonth()+1).padStart(2,'0');
+  const dd = String(d.getDate()).padStart(2,'0');
+  return `${y}-${m}-${dd}`;
 }
 
 function fmtHM(mins) {
@@ -549,7 +558,10 @@ function streak(sessions) {
   if (!days.length) return 0;
   const today = todayStr();
   const yest = new Date(); yest.setDate(yest.getDate()-1);
-  const yesterdayStr = yest.toISOString().slice(0,10);
+  const yy = yest.getFullYear();
+  const ym = String(yest.getMonth()+1).padStart(2,'0');
+  const yd = String(yest.getDate()).padStart(2,'0');
+  const yesterdayStr = `${yy}-${ym}-${yd}`;
   if (days[0]!==today && days[0]!==yesterdayStr) return 0;
   let count = 1;
   for (let i=1;i<days.length;i++) {
@@ -598,7 +610,10 @@ function renderWeekStrip() {
     const d = new Date(today);
     const diff = today.getDay()===0?6:today.getDay()-1;
     d.setDate(today.getDate()-diff+i);
-    const ds = d.toISOString().slice(0,10);
+    const dy = d.getFullYear();
+    const dm = String(d.getMonth()+1).padStart(2,'0');
+    const dd2 = String(d.getDate()).padStart(2,'0');
+    const ds = `${dy}-${dm}-${dd2}`;
     const mins = data.sessions.filter(s=>s.date===ds).reduce((a,b)=>a+b.minutes,0);
     const pill = document.createElement('div');
     pill.className = 'day-pill'+(mins>0?' has-study':'')+(ds===todayStr_?' today':'');
@@ -644,7 +659,10 @@ function renderChart() {
   const today=new Date();
   for (let i=period-1;i>=0;i--) {
     const d=new Date(today); d.setDate(today.getDate()-i);
-    const ds=d.toISOString().slice(0,10);
+    const cy = d.getFullYear();
+    const cm = String(d.getMonth()+1).padStart(2,'0');
+    const cd = String(d.getDate()).padStart(2,'0');
+    const ds = `${cy}-${cm}-${cd}`;
     labels.push(d.toLocaleDateString('pt-BR',{day:'2-digit',month:'short'}));
     const mins=data.sessions.filter(s=>s.date===ds).reduce((a,b)=>a+b.minutes,0);
     values.push(+(mins/60).toFixed(2));
